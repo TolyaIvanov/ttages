@@ -1,0 +1,17 @@
+env: "local"
+
+grpc_port: "50051"
+storage_path: "./storage"
+
+http_server:
+  address: "0.0.0.0:8080"
+  timeout: 5s
+  idle_timeout: 60s
+
+database:
+  user: "postgres"
+  password: "postgres"
+  host: "172.18.0.2"
+  port: "5432"
+  dbname: "postgres"
+  sslmode: "disable"
