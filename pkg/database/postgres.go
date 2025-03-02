@@ -2,7 +2,7 @@ package database
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"time"
 	"ttages/internal/config"
 
@@ -10,7 +10,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB {
+func NewDatabase(cfg config.Database) *sqlx.DB {
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.User, cfg.DBName, cfg.Password, cfg.SSLMode,
@@ -26,14 +26,14 @@ func NewDatabase(cfg config.Database, log *slog.Logger) *sqlx.DB {
 		}
 
 		if err == nil {
-			log.Info("Connected to database")
+			log.Println("Connected to database")
 			return DB
 		}
 
-		log.Warn(fmt.Sprintf("try %d: cannot connect to db: %s", i, err))
+		log.Println(fmt.Sprintf("try %d: cannot connect to db: %s", i, err))
 		time.Sleep(5 * time.Second) // Ждём перед повторной попыткой
 	}
 
-	log.Error("Failed to connect to database after 5 tries")
-	panic("Database connection failed")
+	log.Fatalf("Failed to connect to database after 5 tries")
+	return nil
 }

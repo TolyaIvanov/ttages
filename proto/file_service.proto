@@ -1,9 +1,12 @@
 syntax = "proto3";
+
 package file_service;
 
+option go_package = "./;pb";
+
 service FileService {
-  rpc UploadFile(stream UploadRequest) returns (UploadResponse);
-  rpc DownloadFile(DownloadRequest) returns (stream DownloadResponse);
+  rpc Upload(stream UploadRequest) returns (UploadResponse);
+  rpc Download(DownloadRequest) returns (stream DownloadResponse);
   rpc ListFiles(ListRequest) returns (ListResponse);
 }
 
@@ -14,6 +17,7 @@ message UploadRequest {
 
 message UploadResponse {
   string id = 1;
+  uint32 size = 2;
 }
 
 message DownloadRequest {
