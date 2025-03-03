@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"time"
+	"ttages/internal/file/entity"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,16 +15,18 @@ import (
 
 type FileHandler struct {
 	pb.UnimplementedFileServiceServer
-	uc        *usecase.FileUsecase
-	uploadSem chan struct{}
-	listSem   chan struct{}
+	uc          *usecase.FileUsecase
+	uploadSem   chan struct{}
+	downloadSem chan struct{}
+	listSem     chan struct{}
 }
 
 func NewFileHandler(uc *usecase.FileUsecase) *FileHandler {
 	return &FileHandler{
-		uc:        uc,
-		uploadSem: make(chan struct{}, 10),
-		listSem:   make(chan struct{}, 100),
+		uc:          uc,
+		uploadSem:   make(chan struct{}, 10),
+		downloadSem: make(chan struct{}, 10),
+		listSem:     make(chan struct{}, 100),
 	}
 }
 
@@ -31,14 +34,27 @@ func (h *FileHandler) Upload(stream pb.FileService_UploadServer) error {
 	h.uploadSem <- struct{}{}
 	defer func() { <-h.uploadSem }()
 
+	var fileData = &DTO.FileUpload{}
+
+	// Читаем первый чанк (содержит имя файла)
 	req, err := stream.Recv()
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	fileData := &DTO.FileUpload{
-		Name:  req.GetFilename(),
-		Chunk: req.GetChunk(),
+	fileData.Name = req.GetFilename()
+
+	// Цикл приема чанков
+	for {
+		fileData.Chunk = append(fileData.Chunk, req.GetChunk()...)
+
+		req, err = stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	file, err := h.uc.Upload(stream.Context(), fileData)
@@ -53,8 +69,8 @@ func (h *FileHandler) Upload(stream pb.FileService_UploadServer) error {
 }
 
 func (h *FileHandler) Download(req *pb.DownloadRequest, stream pb.FileService_DownloadServer) error {
-	h.uploadSem <- struct{}{}
-	defer func() { <-h.uploadSem }()
+	h.downloadSem <- struct{}{}
+	defer func() { <-h.downloadSem }()
 
 	reader, err := h.uc.Download(stream.Context(), req.GetFilename())
 	if err != nil {
@@ -85,6 +101,10 @@ func (h *FileHandler) ListFiles(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 	files, err := h.uc.ListFiles(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if files == nil {
+		files = []entity.File{}
 	}
 
 	pbFiles := make([]*pb.FileInfo, 0, len(files))

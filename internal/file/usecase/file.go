@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,6 +18,8 @@ import (
 )
 
 func (uc *FileUsecase) Upload(ctx context.Context, req *DTO.FileUpload) (*entity.File, error) {
+	log.Println("UC Upload")
+
 	existing, err := uc.fileRepo.GetByName(ctx, req.Name)
 	if existing != nil {
 		return nil, entity.ErrFileExists
@@ -59,6 +62,8 @@ func (uc *FileUsecase) Upload(ctx context.Context, req *DTO.FileUpload) (*entity
 }
 
 func (uc *FileUsecase) Download(ctx context.Context, filename string) (io.Reader, error) {
+	log.Println("UC Download")
+
 	file, err := os.Open(filepath.Join(uc.cfg.StoragePath, filename))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -70,6 +75,8 @@ func (uc *FileUsecase) Download(ctx context.Context, filename string) (io.Reader
 }
 
 func (uc *FileUsecase) ListFiles(ctx context.Context) ([]entity.File, error) {
+	log.Println("UC list")
+
 	cached, err := uc.fileCache.GetFiles(ctx)
 	if err != nil {
 		return nil, err

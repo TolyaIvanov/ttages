@@ -19,7 +19,7 @@ type FileUsecaseInterface interface {
 type FileUsecase struct {
 	fileRepo  *postgres.FileRepository
 	fileCache *redis.FileCache
-	cfg       *config.Config // <-- Используем конфиг из config
+	cfg       *config.Config
 }
 
 func NewFileUsecase(repo *postgres.FileRepository, cache *redis.FileCache, cfg *config.Config) *FileUsecase {
