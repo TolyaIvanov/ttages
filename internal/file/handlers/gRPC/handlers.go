@@ -91,6 +91,7 @@ func (h *FileHandler) Download(req *pb.DownloadRequest, stream pb.FileService_Do
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -115,5 +116,6 @@ func (h *FileHandler) ListFiles(ctx context.Context, _ *pb.ListRequest) (*pb.Lis
 			UpdatedAt: f.UpdatedAt.Format(time.RFC3339),
 		})
 	}
+
 	return &pb.ListResponse{Files: pbFiles}, nil
 }

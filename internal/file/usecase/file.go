@@ -20,41 +20,32 @@ import (
 func (uc *FileUsecase) Upload(ctx context.Context, req *DTO.FileUpload) (*entity.File, error) {
 	log.Println("UC Upload")
 
-	existing, err := uc.fileRepo.GetByName(ctx, req.Name)
-	if existing != nil {
+	existingFile, err := uc.fileRepo.GetByName(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	if existingFile != nil {
 		return nil, entity.ErrFileExists
 	}
-	if err != nil {
-		return nil, err
-	}
 
+	// Сохраняем файл на диск
 	filePath := filepath.Join(uc.cfg.StoragePath, req.Name)
-	file, err := os.Create(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	if _, err := file.Write(req.Chunk); err != nil {
-		return nil, err
+	if err := os.WriteFile(filePath, req.Chunk, 0777); err != nil {
+		return nil, fmt.Errorf("failed to save file: %w", err)
 	}
 
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate UUID: %w", err)
-	}
-
-	now := time.Now()
 	newFile := &entity.File{
-		ID:        id.String(),
+		ID:        uuid.New().String(),
 		Name:      req.Name,
-		CreatedAt: now,
-		UpdatedAt: now,
+		Path:      "/storage/" + req.Name,
 		Size:      int64(len(req.Chunk)),
+		MimeType:  "application/octet-stream",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	if err := uc.fileRepo.Create(ctx, newFile); err != nil {
-		os.Remove(filePath)
+	err = uc.fileRepo.Create(ctx, newFile)
+	if err != nil {
 		return nil, err
 	}
 
@@ -62,7 +53,8 @@ func (uc *FileUsecase) Upload(ctx context.Context, req *DTO.FileUpload) (*entity
 }
 
 func (uc *FileUsecase) Download(ctx context.Context, filename string) (io.Reader, error) {
-	log.Println("UC Download")
+	filePath := filepath.Join(uc.cfg.StoragePath, filename)
+	log.Printf("Attempting to open file: %s", filePath) // Логируем путь
 
 	file, err := os.Open(filepath.Join(uc.cfg.StoragePath, filename))
 	if err != nil {
@@ -71,6 +63,7 @@ func (uc *FileUsecase) Download(ctx context.Context, filename string) (io.Reader
 		}
 		return nil, err
 	}
+
 	return file, nil
 }
 
@@ -93,5 +86,6 @@ func (uc *FileUsecase) ListFiles(ctx context.Context) ([]entity.File, error) {
 	if err := uc.fileCache.SetFiles(ctx, files); err != nil {
 		return files, nil
 	}
+
 	return files, nil
 }

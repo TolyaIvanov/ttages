@@ -12,8 +12,10 @@ var (
 
 type File struct {
 	ID        string    `db:"id"`
-	Name      string    `db:"name"`
+	Name      string    `db:"filename"`
+	Path      string    `db:"path"`
+	Size      int64     `db:"size"`
+	MimeType  string    `db:"mime_type"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
-	Size      int64     `db:"size"`
 }

@@ -21,6 +21,8 @@ COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 COPY --from=builder /app/file-service /app/file-service
 COPY --from=builder /app/migrations /app/migrations
 
+RUN mkdir -p /storage && chmod 777 /storage
+
 RUN chmod +x /app/file-service
 
 EXPOSE 50051

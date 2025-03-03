@@ -36,5 +36,6 @@ func (c *FileCache) GetFiles(ctx context.Context) ([]entity.File, error) {
 
 	var files []entity.File
 	err = json.Unmarshal(data, &files)
+
 	return files, err
 }
